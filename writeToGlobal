@@ -1,0 +1,6 @@
+local file = io.open("GlobalVariables.txt")
+    io.output("GlobalVariables.txt"):write("Hello, world!")
+for line in file:lines() do
+  print(line)
+end
+file:close()

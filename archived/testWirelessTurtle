@@ -1,0 +1,16 @@
+-- open
+local modem = peripheral.find("modem") or error("No modem attached", 0)
+modem.open(1) -- Open 43 so we can receive replies
+
+-- And wait for a message to arrive
+local event, side, channel, replyChannel, message, distance
+repeat
+  event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+until channel == 1
+
+-- print message received
+print("Received a reply: " .. tostring(message))
+
+-- send message back
+modem.transmit(0, 1, "Command received. Commencing mining operation...")
+

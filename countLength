@@ -1,0 +1,76 @@
+local l = 1
+
+turtle.refuel(1)
+
+print("Fuel start: ".. turtle.getFuelLevel() .."")
+
+function goForward()
+
+    local has_block, data = turtle.inspect()
+
+    while data.name == nil or data.name == "minecraft:water" or data.name == "minecraft:lava" do
+
+        has_block, data = turtle.inspect()
+
+        print(data.name)
+
+        if turtle.forward() then
+
+            l = l + 1
+
+        end
+
+        while turtle.getFuelLevel() == 0 do
+
+            print("No fuel.")
+
+            for slot = 1, 16  do
+            
+                turtle.select(slot)
+                turtle.refuel(1)
+
+                if turtle.getFuelLevel() > 0 then
+                    
+                    break
+
+                end
+
+            end
+
+        end
+
+    end
+
+    print(data.name)
+
+end
+
+goForward()
+
+for i = 1, l - 1 do
+
+    if turtle.getFuelLevel() == 0 then
+
+		for slot = 1, 16  do
+		
+			turtle.select(slot)
+			turtle.refuel(1)
+
+			if turtle.getFuelLevel() > 0 then
+				
+				break
+
+			end
+
+		end
+
+	end
+
+    turtle.back()
+
+end
+
+print("Fuel finish: ".. turtle.getFuelLevel() .."")
+
+print("Length: ".. l .."")
+

@@ -1,0 +1,27 @@
+-- gets the user's args input in the form of an array of strings where [1] is the first argument
+local tArgs = { ... }
+
+-- '#' gets the length of the given list
+if #tArgs < 1 or #tArgs < 5 or #tArgs > 5 then
+
+	print( "Input Error. Usage: mineRect <length (x)> <height (y)> <width (z)> <offsetY (starting spot)> <offsetX (starting spot)>" )
+
+	-- ends the program
+	return
+
+end
+
+local modem = peripheral.find("modem") or error("No modem attached", 0)
+modem.open(0) -- Open 43 so we can receive replies
+
+-- Send our message
+modem.transmit(1, 0, "wirelessQuarryPC ".. tArgs[1] .." ".. tArgs[2] .." ".. tArgs[3] .." ".. tArgs[4] .." ".. tArgs[5] .."")
+
+-- And wait for a reply
+local event, side, channel, replyChannel, message, distance
+repeat
+  event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+until channel == 0
+
+print("Received a reply: " .. tostring(message))
+

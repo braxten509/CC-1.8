@@ -1,0 +1,606 @@
+local cord_l, cord_h, cord_w = 0, 0, 0
+
+-- 12o'clock, 3o'clock, 6o'clock, 9o'clock
+local directions = {"12o'clock", "3o'clock", "6o'clock", "9o'clock"}
+local direction_selector = 1
+local current_direction = directions[direction_selector]
+
+
+
+-- syntax: string
+function WriteToGlobal(textToWrite)
+
+io.output("GlobalVariables.txt"):write(textToWrite)
+
+end
+
+
+
+function ModemWait()
+
+	-- print("waiting...")
+
+	-- local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+	-- os.sleep(5)
+	-- print(("%s"):format(tostring(message)))
+	
+end
+
+
+
+function MoveDown(Int)
+
+	for i = 1, Int do
+
+		ReplaceFluid('down')
+
+		while turtle.down() == false do
+
+			CheckFuel()
+			print("Turtle blocked")
+			turtle.digDown()
+
+		end
+
+		cord_h = cord_h + 1
+
+	end
+
+end
+
+
+
+function MoveUp(Int)
+
+	for i = 1, Int do
+
+		ReplaceFluid('up')
+
+		while turtle.up() == false do
+
+			CheckFuel()
+			print("Turtle blocked")
+			turtle.digUp()
+
+		end
+
+		cord_h = cord_h - 1
+
+	end
+
+end
+
+
+
+function CheckFuel()
+
+	if turtle.getFuelLevel() == 0 then
+
+		for slot = 1, 16  do
+		
+			turtle.select(slot)
+			turtle.refuel(1)
+
+			if turtle.getFuelLevel() > 0 then
+				
+				break
+
+			end
+
+		end
+
+	end
+
+end
+
+
+
+function InventoryFull()
+
+	local slotCount = 0
+
+	for inventory = 1, 16 do
+
+		if turtle.getItemCount(inventory) > 0 then
+
+			slotCount = slotCount + 1
+
+		end
+
+	end
+
+	if slotCount > 15 then
+		
+		print("Inventory Full")
+		return true
+
+	else
+
+		return false
+
+	end
+
+end
+
+
+
+-- syntax: 'L' or 'R'
+function ChangeDirection(leftOrRight)
+
+	if leftOrRight == 'R' then
+
+		turtle.turnRight()
+		
+		direction_selector = direction_selector + 1
+
+		if direction_selector % 5 == 0 then
+			
+			direction_selector = 1
+
+		end
+
+	elseif leftOrRight == 'L' then
+
+		turtle.turnLeft()
+		
+		direction_selector = direction_selector - 1
+
+		if direction_selector < 1 then
+			
+			direction_selector = 4
+
+		end
+
+	else
+
+		error("Syntax error: use string 'L' or 'R'")
+
+	end
+
+	current_direction = directions[direction_selector]
+
+	print(current_direction)
+
+end
+
+
+
+-- syntax: "12o'clock", "3o'clock", "6o'clock", or "9o'clock"
+function SetDirection(direction)
+
+	while current_direction ~= direction do
+	
+		ChangeDirection('R')
+
+	end
+
+	print("direction adjusted.")
+	
+end
+
+function EmptyInventory()
+
+	local fuelCount = 0
+	local excessFuel = 0
+
+	for inventory = 1, 16 do
+
+		turtle.select(inventory)
+
+		if turtle.getItemDetail() == nil then else
+
+			if (turtle.getItemDetail().name == "minecraft:coal" or turtle.getItemDetail().name == "minecraft:charcoal" or turtle.getItemDetail().name == "modern_industrialization:lignite_coal") and fuelCount <= 64 then 
+
+				local currentStackCounter = 0
+
+				for i = 1, turtle.getItemDetail().count do
+
+					currentStackCounter = currentStackCounter + 1
+				
+					fuelCount = fuelCount + 1
+
+					if fuelCount > 64 then
+
+						-- stack of 55, next stack of 25, 16 needs removed. 25-9
+						turtle.drop(turtle.getItemDetail().count - currentStackCounter)
+						
+						break
+
+					end
+
+				end
+			
+			else
+
+				turtle.drop()
+
+			end
+
+		end	
+
+	end
+
+end
+
+function GoEmptyInventory()
+
+	local stored_l, stored_h, stored_w = cord_l, cord_h, cord_w
+	local stored_direction = current_direction
+
+	MoveUp(stored_h)
+
+	SetDirection("3o'clock")
+
+	MoveForward(stored_w, 'cord_w', '-', "don't_mine", "don't_check_inv")
+
+	ChangeDirection('R')
+
+	MoveForward(stored_l, 'cord_l', '-', "don't_mine", "don't_check_inv")
+
+	print("Emptying inventory")
+	print("cord_l: ".. cord_l ..", cord_h: ".. cord_h ..", cord_w: ".. cord_w .."")
+
+	--Empty inventory
+	EmptyInventory()
+
+	ChangeDirection('R')
+	ChangeDirection('R')
+
+	-- Return to previous position
+	print("Returning...")
+
+	MoveDown(stored_h)
+
+	MoveForward(stored_l, 'cord_l', '+', "don't_mine", "don't_check_inv")
+
+	ChangeDirection('L')
+
+	MoveForward(stored_w, 'cord_w', '+', "don't_mine", "don't_check_inv")
+
+	SetDirection(stored_direction)
+
+	-- print("current direction: " .. current_direction)
+	-- error("I said stop!!")
+
+	print("Continuing layer...")
+
+end
+
+
+-- syntax: 'front', 'up', 'down'
+function ReplaceFluid(direction)
+
+	if direction == 'front' then
+		local has_block, data = turtle.inspect()
+		if data.name == "minecraft:lava" then
+			for i = 1, 16 do
+				turtle.select(i)
+				if turtle.getItemDetail() ~= nil then
+					if turtle.place() then
+						break
+					end
+				end
+			end
+		end
+	elseif direction == 'down' then
+		local has_block, data = turtle.inspectDown()
+		if data.name == "minecraft:lava" then
+			for i = 1, 16 do
+				turtle.select(i)
+				if turtle.getItemDetail() ~= nil then
+					if turtle.placeDown() then
+						break
+					end
+				end
+			end
+		end
+	elseif direction == 'up' then
+		local has_block, data = turtle.inspectUp()
+		if data.name == "minecraft:lava" then
+			for i = 1, 16 do
+				turtle.select(i)
+				if turtle.getItemDetail() ~= nil then
+					if turtle.place() then
+						break
+					end
+				end
+			end
+		end
+	end
+
+end
+
+
+
+-- syntax: num; 'cord_l', 'h', or 'w'; '+' or '-'; 'mine' or 'don't_mine'; "don't_check_inv" or "check_inv"
+function MoveForward(tilesForward, cordChanged, plusOrMinus, should_mine, shouldCheckInventory)
+
+	for i = 1, tilesForward do
+
+		print("Fuel: ".. turtle.getFuelLevel() .."")
+		-- print(textutils.serialise(turtle.getItemDetail().name))
+
+		ReplaceFluid('front')
+
+		if shouldCheckInventory == "check_inv" then
+
+			if InventoryFull() then
+			
+				GoEmptyInventory()
+		
+			end
+
+		elseif shouldCheckInventory == "don't_check_inv" then else
+
+			error("Syntax error. Use string 'check_inv' or 'don't_check_inv'")
+
+		end
+
+		if should_mine == "mine" then
+
+			turtle.dig()
+
+		elseif should_mine ~= "don't_mine" then
+
+			error("Syntax error. Use string 'mine' or 'don't_mine'")
+
+		end
+
+		while turtle.forward() == false do
+
+			CheckFuel()
+			print("Turtle blocked")
+			turtle.dig()
+
+		end
+		
+		if plusOrMinus == '+' then
+
+			if cordChanged == "cord_l" then
+
+				cord_l = cord_l + 1
+
+			elseif cordChanged == "cord_h" then
+
+				cord_h = cord_h + 1
+
+			elseif cordChanged == "cord_w" then
+
+				cord_w = cord_w + 1
+
+			else
+
+				error("cord '".. cordChanged .."' not accepted. Use string 'cord_l', 'cord_h', or 'cord_w'")
+
+			end
+
+		elseif plusOrMinus == '-' then
+
+			if cordChanged == "cord_l" then
+
+				cord_l = cord_l - 1
+
+			elseif cordChanged == "cord_h" then
+	
+				cord_h = cord_h - 1
+
+			elseif cordChanged == "cord_w" then
+
+				cord_w = cord_w - 1
+
+			else
+
+				error("cord '".. cordChanged .."' not accepted. Use string 'cord_l', 'cord_h', or 'cord_w'")
+
+			end
+
+		elseif plusOrMinus ~= '-' or plusOrMinus ~= '+' then
+
+			error("Symbol not accepted. Use char '+' or '-'")
+
+		end
+
+		WriteToGlobal("cord_l: ".. cord_l .."\ncord_h: ".. cord_h .."\ncord_w: ".. cord_w .."")
+
+	end
+
+end
+
+
+
+function RotateRight()
+
+	ChangeDirection('R')
+	turtle.dig()
+
+	while turtle.forward() == false do
+
+		CheckFuel()
+		print("Turtle blocked")
+		turtle.dig()
+
+	end
+
+	ChangeDirection('R')
+	turtle.dig()
+
+	cord_w = cord_w + 1
+
+	ModemWait()
+
+end
+
+
+
+function RotateLeft()
+
+	ChangeDirection('L')
+	turtle.dig()
+
+	while turtle.forward() == false do
+
+		CheckFuel()
+		print("Turtle blocked")
+		turtle.dig()
+
+	end
+	
+	ChangeDirection('L')
+	turtle.dig()
+
+	cord_w = cord_w + 1
+
+	ModemWait()
+
+end
+
+
+
+function MineRect(Length, Height, Width, OffsetY, OffsetX)
+
+	for y = 1, Height do
+
+		MoveForward(OffsetX, 'cord_l', '+', "mine", "check_inv")
+
+		MoveDown(OffsetY)
+
+		MoveDown(y-1)
+		
+
+		if Height > 1 and Width == 1 and Length == 1 then
+
+			turtle.digDown()
+			cord_h = cord_h + 1
+			ChangeDirection('R')
+
+		else
+
+			for x = 1, Width do
+
+				-- Even numbers
+				if x % 2 == 0 then
+
+					print("Mine: Even x = ".. x .."")
+					print("cord_l: ".. cord_l ..", cord_h: ".. cord_h ..", cord_w: ".. cord_w .."")
+
+					MoveForward(Length-1, 'cord_l', '-', "mine", "check_inv")
+
+					if x ~= Width then
+
+						RotateRight()
+
+					else
+
+						print("Finished mining layer.")
+
+						MoveForward(OffsetX, 'cord_l', '-', "don't_mine", "check_inv")
+
+						ChangeDirection('L')
+
+						MoveForward(cord_w, 'cord_w', '-', "don't_mine", "check_inv")
+
+					end
+
+				-- Odd numbers
+				else
+
+					print("Mine: Odd x = ".. x .."")
+					print("cord_l: ".. cord_l ..", cord_h: ".. cord_h ..", cord_w: ".. cord_w .."")
+
+					MoveForward(Length-1, 'cord_l', '+', "mine", "check_inv")
+
+					if x ~= Width then
+
+						RotateLeft()
+
+					else
+
+						print("Finished mining layer.")
+						print("cord_l: ".. cord_l ..", cord_h: ".. cord_h ..", cord_w: ".. cord_w .."")
+
+						-- Move Backwards
+						ChangeDirection('R')
+						ChangeDirection('R')
+
+						MoveForward(cord_l + OffsetX, 'cord_l', '-', "mine", "check_inv")
+							
+						ChangeDirection('L')
+
+						MoveForward(cord_w, 'cord_w', '-', "mine", "check_inv")
+
+					end
+
+				end
+
+			end
+
+		end
+
+		print("Empyting Inventory after layer...")
+		print("cord_l: ".. cord_l ..", cord_h: ".. cord_h ..", cord_w: ".. cord_w .."")
+
+		MoveUp(y - 1 + OffsetY)
+		ChangeDirection('R')
+
+		EmptyInventory()
+
+		ChangeDirection('L')
+        ChangeDirection('L')
+
+		print("Reset complete")
+
+	end
+
+	print("All blocks mined. Loop ends.")
+
+end
+
+
+
+
+
+-- open
+local modem = peripheral.find("modem") or error("No modem attached", 0)
+modem.open(1) -- Open 43 so we can receive replies
+
+local receivedMessageTable = {}
+
+-- And wait for a message to arrive
+local event, side, channel, replyChannel, message, distance
+repeat
+  event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+until channel == 1
+
+-- print message received
+print("Received a reply: " .. tostring(message))
+
+-- send message back
+modem.transmit(0, 1, "Command received. Commencing mining operation...")
+
+for word in string.gmatch(tostring(message), "%d+") do
+
+	table.insert(receivedMessageTable, word)
+
+end
+
+--print table
+for k, v in pairs(receivedMessageTable) do
+
+    if type(v) == "table" then
+
+      print(v)
+
+    else
+
+      print(k, v)
+
+    end
+
+end
+
+print(type(tonumber(receivedMessageTable[5])))
+
+-- Execute the functions together
+MineRect(tonumber(receivedMessageTable[1]), tonumber(receivedMessageTable[2]), tonumber(receivedMessageTable[3]), tonumber(receivedMessageTable[4]), tonumber(receivedMessageTable[5]))
+
+
